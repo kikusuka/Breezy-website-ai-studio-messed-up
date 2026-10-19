@@ -67,46 +67,44 @@ export const aiProviderService = {
       errors.push(`${activeModel.provider}: ${err.message || 'Request failed'}`);
     }
 
-    // 2. Try secondary configured providers if available
-    const configured = ['gemini', 'groq', 'sambanova', 'openrouter', 'anthropic', 'ollama', 'openai-compatible'].filter(
-      (p) => p !== activeModel.provider && effectiveProviderService.isRoutable(p)
-    );
-
-    for (const p of configured) {
-      try {
-        const apiKey = keys[p] || undefined;
-        const config = providerConfigService.getConfig();
-        const configuredModel = p === config.defaultProvider ? config.defaultModel : '';
-        const catalogModel = AVAILABLE_MODELS[p]?.[0]?.id || '';
-        const localModel = p === 'ollama' ? (config.defaultProvider === 'ollama' ? config.defaultModel : '') : '';
-        const model = configuredModel || localModel || catalogModel;
-        if (!model) {
-          errors.push(`[object Object]: no model configured`);
-          continue;
-        }
-
-        const res = await apiClient.chatBreezy({
-          prompt,
-          history: [],
-          provider: p,
-          model,
-          apiKey,
-        });
-
-        if (res && res.text) {
-          const activeBackend = apiClient.getActiveEndpoint().name;
-          return {
-            text: res.text,
-            providerUsed: `${p.toUpperCase()} (${apiKey ? 'BYOK via ' : p === 'ollama' || p === 'openai-compatible' ? 'Local · ' : ''}${activeBackend})`,
-            modelUsed: p,
-          };
-        }
-      } catch (err: any) {
-        errors.push(`${p}: ${err.message}`);
-      }
+    // Only use a secondary provider when the user explicitly enabled and
+    // configured a fallback provider AND model in settings.
+    const config = providerConfigService.getConfig();
+    const fallback = config.fallback;
+    if (!fallback?.enabled || !fallback.provider || !fallback.model) {
+      const summary = errors.length > 0 ? errors.join('; ') : 'Selected provider failed';
+      throw new Error(`AI generation failed on the selected provider (${summary}). No automatic provider fallback is enabled.`);
     }
 
-    const summary = errors.length > 0 ? errors.join('; ') : 'All configured providers failed';
-    throw new Error(`AI generation failed (${summary}). Please check your API keys or switch providers in Settings.`);
+    if (fallback.provider === activeModel.provider) {
+      throw new Error('The configured fallback must be different from the primary provider.');
+    }
+    if (!effectiveProviderService.isRoutable(fallback.provider)) {
+      throw new Error(`Fallback provider ${fallback.provider} is not configured or is not routable.`);
+    }
+
+    try {
+      const apiKey = keys[fallback.provider] || undefined;
+      const res = await apiClient.chatBreezy({
+        prompt,
+        history: [],
+        provider: fallback.provider,
+        model: fallback.model,
+        apiKey,
+      });
+
+      if (res && res.text) {
+        const activeBackend = apiClient.getActiveEndpoint().name;
+        return {
+          text: res.text,
+          providerUsed: `Explicit fallback · ${fallback.provider.toUpperCase()} via ${activeBackend}`,
+          modelUsed: fallback.model,
+        };
+      }
+      throw new Error('Fallback provider returned an empty response.');
+    } catch (err: any) {
+      errors.push(`Explicit fallback ${fallback.provider}: ${err.message || 'Request failed'}`);
+      throw new Error(`AI generation failed (${errors.join('; ')}).`);
+    }
   },
 };
