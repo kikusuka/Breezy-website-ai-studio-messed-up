@@ -184,29 +184,19 @@ class EffectiveProviderService {
    */
   public getActiveRoutableModel(): { provider: string; model: string; source: 'byok' | 'server' | 'local' } | null {
     const config = providerConfigService.getConfig();
-    const currentProvider = config.defaultProvider;
+    const provider = config.defaultProvider;
+    const model = config.defaultModel;
 
-    if (currentProvider && this.isRoutable(currentProvider)) {
-      const models = AVAILABLE_MODELS[currentProvider];
-      const model = config.defaultModel || models?.[0]?.id || '';
-      const info = this.getProviderInfo(currentProvider);
-      if (!model) return null;
-      return { provider: currentProvider, model, source: info.source as 'byok' | 'server' | 'local' };
-    }
+    // Chat uses only the explicitly selected default. A saved key or a research
+    // seat assignment must not silently choose a provider/model for conversations.
+    if (!provider || !model || !this.isRoutable(provider)) return null;
 
-    // Check fallback routables
-    const allProviders = ['gemini', 'anthropic', 'groq', 'sambanova', 'openrouter', 'ollama', 'openai-compatible'];
-    for (const p of allProviders) {
-      if (this.isRoutable(p)) {
-        const models = AVAILABLE_MODELS[p];
-        const info = this.getProviderInfo(p);
-        if (models && models.length > 0) {
-          return { provider: p, model: models[0].id, source: info.source as 'byok' | 'server' | 'local' };
-        }
-      }
-    }
-
-    return null;
+    const info = this.getProviderInfo(provider);
+    return {
+      provider,
+      model,
+      source: info.source as 'byok' | 'server' | 'local',
+    };
   }
 }
 
