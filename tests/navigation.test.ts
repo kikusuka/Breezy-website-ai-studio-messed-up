@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { LAB_NAV, MAIN_NAV, MOBILE_NAV, VALID_TABS } from '../src/lib/nav';
+import { LAB_NAV, MAIN_NAV, VALID_TABS } from '../src/lib/nav';
 
 describe('workspace navigation', () => {
-  it('keeps the Stitch primary destinations reachable from the desktop sidebar', () => {
+  it('keeps the primary destinations reachable from the shared sidebar', () => {
     const ids = MAIN_NAV.map((item) => item.id);
     expect(ids).toContain('chat');
     expect(ids).toContain('research');
@@ -16,8 +16,8 @@ describe('workspace navigation', () => {
     expect(LAB_NAV.map((item) => item.id)).toEqual(['build', 'canvas']);
   });
 
-  it('uses only valid tabs in the mobile navigation and has no duplicate destinations', () => {
-    const ids = MOBILE_NAV.map((item) => item.id);
+  it('uses unique, valid destinations across the shared navigation', () => {
+    const ids = [...MAIN_NAV, ...LAB_NAV].map((item) => item.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.every((id) => VALID_TABS.includes(id))).toBe(true);
   });
