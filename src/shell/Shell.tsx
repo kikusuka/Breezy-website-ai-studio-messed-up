@@ -31,7 +31,7 @@ function Avatar({ name, photo, size = 'w-8 h-8' }: { name: string; photo?: strin
 function Sidebar({ tab, go, backendOnline, endpointName }: Omit<ShellProps, 'children'>) {
   const profile = useProfile();
   const name = profile.displayName.trim() || 'Guest';
-  const role = profile.roleTitle.trim() || 'Profile not set up';
+  const role = profile.roleTitle.trim() || 'Personal workspace';
   const item = (n: { id: ActiveTab; label: string; icon: string }) => {
     const active = tab === n.id;
     return (
@@ -43,15 +43,14 @@ function Sidebar({ tab, go, backendOnline, endpointName }: Omit<ShellProps, 'chi
     );
   };
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 z-50 flex-col justify-between bg-surface-container-low/95 backdrop-blur-xl shadow-[1px_0_0_rgba(61,73,77,0.35)] flex">
+    <aside className="fixed left-0 top-0 h-full w-60 z-50 flex-col justify-between bg-surface-container-low/95 backdrop-blur-xl shadow-[1px_0_0_rgba(61,73,77,0.35)] flex">
       <div className="flex flex-col min-h-0 overflow-y-auto">
         <a href="#landing" onClick={(e) => { e.preventDefault(); go('landing'); }} className="h-16 px-space-lg flex items-center gap-space-sm shrink-0">
           <BreezyLogo size={30} /><span className="font-headline-sm text-headline-sm tracking-tight text-on-surface">Breezy</span>
-          <span className="ml-auto font-code-sm text-code-sm text-primary bg-surface-container-highest px-space-xs py-0.5 rounded">v{VERSION}</span>
         </a>
         <nav className="px-space-md py-space-sm flex flex-col gap-space-xs" aria-label="Main">{MAIN_NAV.map(item)}</nav>
         <div className="px-space-md pt-space-md">
-          <div className="px-space-md pb-space-xs font-label-sm text-label-sm uppercase tracking-wider text-outline">Laboratories</div>
+          <div className="px-space-md pb-space-xs font-label-sm text-label-sm uppercase tracking-wider text-outline">Tools</div>
           <nav className="flex flex-col gap-space-xs" aria-label="Laboratories">{LAB_NAV.map(item)}</nav>
         </div>
       </div>
@@ -120,7 +119,7 @@ export function Shell({ tab, go, backendOnline, endpointName, children }: ShellP
   return (
     <div className="h-[100dvh] w-full flex bg-surface text-on-surface overflow-hidden">
       <Sidebar tab={tab} go={go} backendOnline={backendOnline} endpointName={endpointName} />
-      <div className="flex-1 min-w-0 flex flex-col pl-64">
+      <div className="flex-1 min-w-0 flex flex-col pl-60">
         <DesktopHeader go={go} /><MobileHeader tab={tab} go={go} />
         {!backendOnline && (
           <div role="alert" className="shrink-0 flex items-center gap-space-sm px-gutter py-space-xs bg-error-container/40 text-on-error-container font-body-sm text-body-sm">
