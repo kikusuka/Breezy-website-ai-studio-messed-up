@@ -22,7 +22,7 @@ export const ChatWorkspace: React.FC = () => {
   useEffect(grow, [input]);
 
   const run = async (history: ChatMessage[]) => {
-    if (!active) { setError('No model is connected. Add a provider key or a local Ollama URL in Models first.'); return; }
+    if (!active) { setError('No usable default chat model is selected. Open Models to connect a provider and explicitly choose a model.'); return; }
     setError(null); setBusy(true); const c = new AbortController(); ctrl.current = c;
     try {
       const last = history[history.length - 1];
@@ -33,7 +33,7 @@ export const ChatWorkspace: React.FC = () => {
   };
   const send = (text = input) => {
     const t = text.trim(); if (!t || busy) return;
-    if (!active) { setError('No model is connected. Add a provider key or a local Ollama URL in Models first.'); return; }
+    if (!active) { setError('No usable default chat model is selected. Open Models to connect a provider and explicitly choose a model.'); return; }
     setInput(''); const next = [...messages, { role: 'user' as const, content: t }]; setMessages(next); void run(next);
   };
   const regenerate = () => { if (busy) return; const i = messages.map((m) => m.role).lastIndexOf('user'); if (i < 0) return; const next = messages.slice(0, i + 1); setMessages(next); void run(next); };
