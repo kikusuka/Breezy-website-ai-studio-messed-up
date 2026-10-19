@@ -27,17 +27,6 @@ export const LAB_NAV: NavItem[] = [
   { id: 'canvas', label: 'Canvas', icon: 'draw' },
 ];
 
-/** Small, high-value destinations for the mobile bottom bar. */
-export const MOBILE_NAV: NavItem[] = [
-  { id: 'chat', label: 'Chat', icon: 'chat_bubble' },
-  { id: 'research', label: 'Research', icon: 'psychology' },
-  { id: 'history', label: 'History', icon: 'history' },
-  { id: 'models', label: 'Models', icon: 'hub' },
-  { id: 'settings', label: 'Settings', icon: 'settings' },
-];
-
-export const MORE_IDS: ActiveTab[] = ['history', 'notes', 'build', 'canvas', 'profile'];
-
 export const TITLES: Record<ActiveTab, string> = {
   landing: 'Home',
   research: 'Research',
