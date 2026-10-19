@@ -23,13 +23,22 @@ const CUSTOM = '__custom__';
 
 export const VaultWorkspace: React.FC = () => {
   const [config, setConfig] = useState<CanonicalWorkspaceConfig>(providerConfigService.getConfig());
+  const [customDefaultModel, setCustomDefaultModel] = useState(() => {
+    const initial = providerConfigService.getConfig();
+    return Boolean(initial.defaultModel && !(AVAILABLE_MODELS[initial.defaultProvider] || []).some((model) => model.id === initial.defaultModel));
+  });
   const [show, setShow] = useState<Record<string, boolean>>({});
   const [test, setTest] = useState<{ id: string; busy?: boolean; valid?: boolean; message?: string } | null>(null);
   const [saved, setSaved] = useState(false); const [ollamaUrl, setOllamaUrl] = useState(config.ollamaBaseUrl || 'http://localhost:11434');
   const [customOpen, setCustomOpen] = useState<Partial<Record<Role, boolean>>>({});
   const timer = useRef<number | undefined>(undefined);
   const active = effectiveProviderService.getActiveRoutableModel();
-  useEffect(() => { setConfig(providerConfigService.getConfig()); void effectiveProviderService.refreshServerHealth(); }, []);
+  useEffect(() => {
+    const current = providerConfigService.getConfig();
+    setConfig(current);
+    setCustomDefaultModel(Boolean(current.defaultModel && !(AVAILABLE_MODELS[current.defaultProvider] || []).some((model) => model.id === current.defaultModel)));
+    void effectiveProviderService.refreshServerHealth();
+  }, []);
 
   const commit = (next: CanonicalWorkspaceConfig) => { setConfig(next); providerConfigService.saveConfig(next); announceConfigChange(); setSaved(true); window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setSaved(false), 1800); };
   const setKey = (id: string, v: string) => commit({ ...config, keys: { ...config.keys, [id]: v } });
@@ -60,7 +69,13 @@ export const VaultWorkspace: React.FC = () => {
     );
   };
 
-  const serverGemini = effectiveProviderService.isServerGeminiConfigured();
+  const defaultModels = AVAILABLE_MODELS[config.defaultProvider] || [];
+  const activeStatusLabel = active
+    ? `${providerLabel(active.provider)} · ${active.model}`
+    : config.defaultProvider && config.defaultModel
+      ? `${providerLabel(config.defaultProvider)} selected · not connected`
+      : 'No model assigned';
+
   return (
     <div className="w-full max-w-5xl mx-auto px-gutter lg:px-space-lg py-space-lg lg:py-space-xl flex flex-col gap-space-xl">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
@@ -68,10 +83,79 @@ export const VaultWorkspace: React.FC = () => {
           <h1 className="font-headline-xl-mobile lg:font-headline-xl text-headline-xl-mobile lg:text-headline-xl tracking-tight mt-1">Models &amp; keys</h1>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1 max-w-xl">Connect your own providers and decide which model sits in each seat. Nothing is assumed: an empty seat stays empty.</p></div>
         <div className="flex items-center gap-space-sm self-start md:self-auto">
-          <span className={`flex items-center gap-space-sm px-space-md py-space-xs rounded-full bg-surface-container-high font-label-md text-label-md`}><span className={`w-2 h-2 rounded-circle ${active || serverGemini ? 'bg-tertiary' : 'bg-outline'}`} />{active ? `${providerLabel(active.provider)} · ${active.model}` : serverGemini ? 'Server Gemini available' : 'No model assigned'}</span>
+          <span className="flex items-center gap-space-sm px-space-md py-space-xs rounded-full bg-surface-container-high font-label-md text-label-md"><span className={`w-2 h-2 rounded-circle ${active ? 'bg-tertiary' : 'bg-outline'}`} />{activeStatusLabel}</span>
           <span className={`font-code-sm text-code-sm text-tertiary transition-opacity ${saved ? 'opacity-100' : 'opacity-0'}`} aria-live="polite">Saved</span>
         </div>
       </div>
+
+      <section aria-labelledby="default-chat-h" className="bg-surface-container rounded-3xl p-space-lg coat">
+        <div className="mb-space-md">
+          <h2 id="default-chat-h" className="font-headline-md text-headline-md">Default chat model</h2>
+          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 max-w-2xl">
+            Chat uses this exact provider and model. Saving a key or assigning a research seat will not silently change your chat model.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-space-md">
+          <div className="flex flex-col gap-space-xs">
+            <label htmlFor="default-chat-provider" className="font-label-md text-label-md text-on-surface-variant">Provider</label>
+            <select
+              id="default-chat-provider"
+              value={config.defaultProvider}
+              onChange={(e) => {
+                setCustomDefaultModel(false);
+                commit({ ...config, defaultProvider: e.target.value as CanonicalWorkspaceConfig['defaultProvider'], defaultModel: '' });
+              }}
+              className="w-full bg-surface-container-lowest rounded-xl hairline px-space-md min-h-[44px] font-body-sm text-body-sm focus:outline-none focus:shadow-[inset_0_0_0_1px_rgba(76,214,251,0.5)]"
+            >
+              <option value="">Choose a provider</option>
+              {ALL_PROVIDERS.map((provider) => (
+                <option key={provider} value={provider}>{providerLabel(provider)}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-space-xs">
+            <label htmlFor="default-chat-model" className="font-label-md text-label-md text-on-surface-variant">Model</label>
+            <select
+              id="default-chat-model"
+              value={customDefaultModel ? CUSTOM : config.defaultModel}
+              disabled={!config.defaultProvider}
+              onChange={(e) => {
+                if (e.target.value === CUSTOM) {
+                  setCustomDefaultModel(true);
+                  commit({ ...config, defaultModel: '' });
+                } else {
+                  setCustomDefaultModel(false);
+                  commit({ ...config, defaultModel: e.target.value });
+                }
+              }}
+              className="w-full bg-surface-container-lowest rounded-xl hairline px-space-md min-h-[44px] font-body-sm text-body-sm focus:outline-none focus:shadow-[inset_0_0_0_1px_rgba(76,214,251,0.5)] disabled:opacity-50"
+            >
+              <option value="">Choose a model</option>
+              {defaultModels.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
+              <option value={CUSTOM}>Custom model ID…</option>
+            </select>
+          </div>
+          {customDefaultModel && (
+            <div className="sm:col-span-2 flex flex-col gap-space-xs">
+              <label htmlFor="default-chat-custom-model" className="font-label-md text-label-md text-on-surface-variant">Exact model ID</label>
+              <input
+                id="default-chat-custom-model"
+                value={config.defaultModel}
+                onChange={(e) => commit({ ...config, defaultModel: e.target.value })}
+                placeholder="Enter the exact model ID supported by this provider"
+                className="w-full bg-surface-container-lowest rounded-xl hairline px-space-md min-h-[44px] font-code-md text-code-md focus:outline-none focus:shadow-[inset_0_0_0_1px_rgba(76,214,251,0.5)]"
+              />
+            </div>
+          )}
+        </div>
+        <p className="font-body-sm text-body-sm text-outline mt-space-sm">
+          {config.defaultProvider && config.defaultModel
+            ? effectiveProviderService.isRoutable(config.defaultProvider)
+              ? 'This selection is configured. Use Test key above to verify the connection.'
+              : 'This model is selected but the provider is not connected yet.'
+            : 'No default chat model is selected. Connect a provider, then choose a model here.'}
+        </p>
+      </section>
 
       <section aria-labelledby="prov-h"><div className="flex items-center justify-between mb-space-md"><h2 id="prov-h" className="font-headline-md text-headline-md">Provider connections</h2><span className="font-code-sm text-code-sm text-outline">Stored in this browser</span></div>
         <div className="grid md:grid-cols-2 gap-space-md">{PROVIDERS.map((p) => { const has = Boolean((config.keys as any)[p.id]); return (
