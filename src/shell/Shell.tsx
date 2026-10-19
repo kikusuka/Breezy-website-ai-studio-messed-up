@@ -28,7 +28,7 @@ function Avatar({ name, photo, size = 'w-8 h-8' }: { name: string; photo?: strin
   );
 }
 
-function Sidebar({ tab, go, backendOnline, endpointName }: Omit<ShellProps, 'children'>) {
+function Sidebar({ tab, go, backendOnline, endpointName, mobileOpen, onClose }: Omit<ShellProps, 'children'> & { mobileOpen: boolean; onClose: () => void }) {
   const profile = useProfile();
   const name = profile.displayName.trim() || 'Guest';
   const role = profile.roleTitle.trim() || 'Profile not set up';
@@ -43,7 +43,9 @@ function Sidebar({ tab, go, backendOnline, endpointName }: Omit<ShellProps, 'chi
     );
   };
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 z-50 flex-col justify-between bg-surface-container-low/95 backdrop-blur-xl shadow-[1px_0_0_rgba(61,73,77,0.35)]">
+    <>
+    {mobileOpen && <button type="button" aria-label="Close navigation" onClick={onClose} className="lg:hidden fixed inset-0 z-[60] bg-black/35" />}
+    <aside className={`${mobileOpen ? 'flex translate-x-0' : '-translate-x-full lg:translate-x-0'} fixed left-0 top-0 h-full w-64 z-[70] flex-col justify-between bg-surface-container-low/95 backdrop-blur-xl shadow-[1px_0_0_rgba(61,73,77,0.35)] transition-transform duration-200 ease-out lg:flex`}>
       <div className="flex flex-col min-h-0 overflow-y-auto">
         <a href="#landing" onClick={(e) => { e.preventDefault(); go('landing'); }} className="h-16 px-space-lg flex items-center gap-space-sm shrink-0">
           <BreezyLogo size={30} /><span className="font-headline-sm text-headline-sm tracking-tight text-on-surface">Breezy</span>
@@ -70,6 +72,8 @@ function Sidebar({ tab, go, backendOnline, endpointName }: Omit<ShellProps, 'chi
         </button>
       </div>
     </aside>
+    </aside>
+    </>
   );
 }
 
@@ -98,7 +102,7 @@ function DesktopHeader({ go }: { go: (t: ActiveTab) => void }) {
   );
 }
 
-function MobileHeader({ tab, go }: { tab: ActiveTab; go: (t: ActiveTab) => void }) {
+function MobileHeader({ tab, go, onMenu }: { tab: ActiveTab; go: (t: ActiveTab) => void; onMenu: () => void }) {
   const profile = useProfile(); const name = profile.displayName.trim() || 'Guest';
   return (
     <header className="lg:hidden shrink-0 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_0_rgba(61,73,77,0.3)] relative z-40">
@@ -108,6 +112,7 @@ function MobileHeader({ tab, go }: { tab: ActiveTab; go: (t: ActiveTab) => void 
           <span className="flex flex-col"><span className="font-headline-sm text-headline-sm text-on-surface tracking-tight leading-none">Breezy</span><span className="font-code-sm text-code-sm text-on-surface-variant leading-none mt-1">{TITLES[tab]}</span></span>
         </button>
         <div className="flex items-center">
+          <button aria-label="Open navigation" type="button" onClick={onMenu} className="w-11 h-11 flex items-center justify-center rounded-xl text-on-surface-variant hover:text-primary transition-colors"><Icon name="menu" className="text-2xl" /></button>
           <button aria-label="Search history" type="button" onClick={() => go('history')} className="w-11 h-11 flex items-center justify-center rounded-xl text-on-surface-variant hover:text-primary transition-colors"><Icon name="search" className="text-2xl" /></button>
           <button aria-label="Profile" type="button" onClick={() => go('profile')} className="w-11 h-11 flex items-center justify-center"><Avatar name={name} photo={profile.photoURL} /></button>
         </div>
@@ -116,43 +121,20 @@ function MobileHeader({ tab, go }: { tab: ActiveTab; go: (t: ActiveTab) => void 
   );
 }
 
-function MobileNavigation({ tab, go }: { tab: ActiveTab; go: (t: ActiveTab) => void }) {
-  return (
-    <nav aria-label="Primary mobile navigation" className="lg:hidden shrink-0 pb-safe border-t border-outline-variant/40 bg-surface-container-low/95 backdrop-blur-xl">
-      <div className="grid grid-cols-5 gap-1 px-2 pt-1.5">
-        {MOBILE_NAV.map((item) => {
-          const active = tab === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => go(item.id)}
-              aria-current={active ? 'page' : undefined}
-              className={`flex min-w-0 min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 transition-colors ${active ? 'bg-surface-container-high text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}`}
-            >
-              <Icon name={item.icon} className="text-[20px]" fill={active} />
-              <span className="text-[10px] leading-3 font-medium truncate max-w-full">{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
-
 export function Shell({ tab, go, backendOnline, endpointName, children }: ShellProps) {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useEffect(() => { setMobileNavOpen(false); }, [tab]);
   return (
     <div className="h-[100dvh] w-full flex bg-surface text-on-surface overflow-hidden">
-      <Sidebar tab={tab} go={go} backendOnline={backendOnline} endpointName={endpointName} />
+      <Sidebar tab={tab} go={go} backendOnline={backendOnline} endpointName={endpointName} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <div className="flex-1 min-w-0 flex flex-col pl-0 lg:pl-64">
-        <DesktopHeader go={go} /><MobileHeader tab={tab} go={go} />
+        <DesktopHeader go={go} /><MobileHeader tab={tab} go={go} onMenu={() => setMobileNavOpen(true)} />
         {!backendOnline && (
           <div role="alert" className="shrink-0 flex items-center gap-space-sm px-gutter py-space-xs bg-error-container/40 text-on-error-container font-body-sm text-body-sm">
             <Icon name="cloud_off" className="text-[18px]" /> Backend unreachable — research and chat need it. Retrying every 30s.
           </div>
         )}
         <main className="flex-1 min-h-0 overflow-y-auto splatter-soft" id="main">{children}</main>
-        <MobileNavigation tab={tab} go={go} />
       </div>
     </div>
   );
