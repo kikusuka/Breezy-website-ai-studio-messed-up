@@ -42,7 +42,7 @@ export const aiProviderService = {
     // Check if any provider is actually configured
     const activeModel = effectiveProviderService.getActiveRoutableModel();
     if (!activeModel) {
-      throw new Error('No AI providers configured. Please add an API key in Settings (BYOK) to run AI generation.');
+      throw new Error('No usable default chat model is selected. Open Models, connect a provider, and explicitly choose a provider and model before running AI generation.');
     }
 
     // 1. Try primary active routable provider
