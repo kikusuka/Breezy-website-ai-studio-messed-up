@@ -162,9 +162,11 @@ export const ChatWorkspace: React.FC = () => {
       const res = await apiClient.chatBreezy({ prompt: last.content, history: history.map((m) => ({ role: m.role, content: m.content })), provider: active!.provider, model: active!.model, apiKey: providerConfigService.getKeys()[active!.provider] }, { signal: c.signal } as any);
       setMessages([...history, { role: 'assistant', content: res.text || 'The model returned an empty response.' }]);
     } catch (e: any) {
-      if (e?.name === 'AbortError') {
-        if (chatMode === 'puter') setMessages(history);
-      } else {
+      if (chatMode === 'puter') {
+        // Never leave an errored partial stream looking like a completed answer.
+        setMessages(history);
+      }
+      if (e?.name !== 'AbortError') {
         setError(e?.message || 'The model did not respond.');
       }
     } finally { setBusy(false); ctrl.current = null; }
