@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { BreezyLogo } from '../components/BreezyLogo';
-import { ActiveTab, LAB_NAV, MAIN_NAV, MOBILE_NAV, TITLES } from '../lib/nav';
+import { ActiveTab, LAB_NAV, MAIN_NAV, TITLES } from '../lib/nav';
 import { useModelState } from '../lib/useModelState';
 import { userProfileService } from '../services/userProfileService';
 
@@ -35,7 +35,7 @@ function Sidebar({ tab, go, backendOnline, endpointName, mobileOpen, onClose }: 
   const item = (n: { id: ActiveTab; label: string; icon: string }) => {
     const active = tab === n.id;
     return (
-      <a key={n.id} href={`#${n.id}`} onClick={(e) => { e.preventDefault(); go(n.id); }} aria-current={active ? 'page' : undefined}
+      <a key={n.id} href={`#${n.id}`} onClick={(e) => { e.preventDefault(); go(n.id); onClose(); }} aria-current={active ? 'page' : undefined}
         className={`relative flex items-center gap-space-md px-space-md py-space-sm rounded-xl transition-colors ${active ? 'bg-surface-container-high text-primary font-medium' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}`}>
         {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-circle bg-primary" />}
         <Icon name={n.icon} className="text-[20px]" fill={active} /><span className="font-body-md text-body-md">{n.label}</span>
