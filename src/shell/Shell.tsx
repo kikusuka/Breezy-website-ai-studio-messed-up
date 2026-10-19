@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { BreezyLogo } from '../components/BreezyLogo';
-import { ActiveTab, LAB_NAV, MAIN_NAV, MOBILE_NAV, MORE_IDS, TITLES } from '../lib/nav';
+import { ActiveTab, LAB_NAV, MAIN_NAV, MOBILE_NAV, TITLES } from '../lib/nav';
 import { useModelState } from '../lib/useModelState';
 import { userProfileService } from '../services/userProfileService';
 
@@ -43,7 +43,7 @@ function Sidebar({ tab, go, backendOnline, endpointName }: Omit<ShellProps, 'chi
     );
   };
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 z-50 flex-col justify-between bg-surface-container-low/95 backdrop-blur-xl shadow-[1px_0_0_rgba(61,73,77,0.35)] flex">
+    <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 z-50 flex-col justify-between bg-surface-container-low/95 backdrop-blur-xl shadow-[1px_0_0_rgba(61,73,77,0.35)]">
       <div className="flex flex-col min-h-0 overflow-y-auto">
         <a href="#landing" onClick={(e) => { e.preventDefault(); go('landing'); }} className="h-16 px-space-lg flex items-center gap-space-sm shrink-0">
           <BreezyLogo size={30} /><span className="font-headline-sm text-headline-sm tracking-tight text-on-surface">Breezy</span>
@@ -56,10 +56,10 @@ function Sidebar({ tab, go, backendOnline, endpointName }: Omit<ShellProps, 'chi
         </div>
       </div>
       <div className="p-space-md flex flex-col gap-space-sm">
-        <a href="#" className="flex items-center gap-space-sm px-space-md py-space-xs rounded-xl hover:bg-surface-container text-on-surface-variant transition-colors" title="Get Help">
+        <button type="button" onClick={() => go('docs')} className="flex items-center gap-space-sm px-space-md py-space-xs rounded-xl hover:bg-surface-container text-on-surface-variant transition-colors text-left" title="Open documentation">
            <span className="w-5 h-5 flex items-center justify-center rounded-circle border border-outline-variant font-code-sm">?</span>
-           <span className="font-label-sm text-label-sm">Get Help</span>
-        </a>
+           <span className="font-label-sm text-label-sm">Help &amp; documentation</span>
+        </button>
         <div className="flex items-center gap-space-sm px-space-md py-space-xs rounded-xl bg-surface-container font-code-sm text-code-sm" title={`Backend: ${endpointName}`}>
           <span className={`w-1.5 h-1.5 rounded-circle shrink-0 ${backendOnline ? 'bg-tertiary' : 'bg-error'}`} />
           <span className="text-on-surface-variant truncate">{backendOnline ? 'Backend reachable' : 'Backend unreachable'}</span>
@@ -76,7 +76,7 @@ function Sidebar({ tab, go, backendOnline, endpointName }: Omit<ShellProps, 'chi
 function DesktopHeader({ go }: { go: (t: ActiveTab) => void }) {
   const profile = useProfile(); const model = useModelState(); const [q, setQ] = useState('');
   const name = profile.displayName.trim() || 'Guest';
-  const chip = model.routable ? { dot: 'bg-tertiary', text: 'text-tertiary', label: model.label } : model.serverGemini ? { dot: 'bg-tertiary', text: 'text-tertiary', label: 'Server Gemini' } : { dot: 'bg-outline', text: 'text-outline', label: 'No model assigned' };
+  const chip = model.routable ? { dot: 'bg-tertiary', text: 'text-tertiary', label: model.label } : { dot: 'bg-outline', text: 'text-outline', label: 'No model assigned' };
   return (
     <header className="hidden lg:flex shrink-0 h-16 items-center justify-between gap-space-md px-space-lg bg-surface/70 backdrop-blur-xl shadow-[0_1px_0_rgba(61,73,77,0.3)] relative z-40">
       <form className="flex-1 max-w-xl" onSubmit={(e) => { e.preventDefault(); try { sessionStorage.setItem('breezy:history-q', q); } catch { /* ignore */ } window.dispatchEvent(new Event('breezy:history-q')); go('history'); }}>
@@ -116,11 +116,35 @@ function MobileHeader({ tab, go }: { tab: ActiveTab; go: (t: ActiveTab) => void 
   );
 }
 
+function MobileNavigation({ tab, go }: { tab: ActiveTab; go: (t: ActiveTab) => void }) {
+  return (
+    <nav aria-label="Primary mobile navigation" className="lg:hidden shrink-0 pb-safe border-t border-outline-variant/40 bg-surface-container-low/95 backdrop-blur-xl">
+      <div className="grid grid-cols-5 gap-1 px-2 pt-1.5">
+        {MOBILE_NAV.map((item) => {
+          const active = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => go(item.id)}
+              aria-current={active ? 'page' : undefined}
+              className={`flex min-w-0 min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 transition-colors ${active ? 'bg-surface-container-high text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}`}
+            >
+              <Icon name={item.icon} className="text-[20px]" fill={active} />
+              <span className="text-[10px] leading-3 font-medium truncate max-w-full">{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 export function Shell({ tab, go, backendOnline, endpointName, children }: ShellProps) {
   return (
     <div className="h-[100dvh] w-full flex bg-surface text-on-surface overflow-hidden">
       <Sidebar tab={tab} go={go} backendOnline={backendOnline} endpointName={endpointName} />
-      <div className="flex-1 min-w-0 flex flex-col pl-64">
+      <div className="flex-1 min-w-0 flex flex-col pl-0 lg:pl-64">
         <DesktopHeader go={go} /><MobileHeader tab={tab} go={go} />
         {!backendOnline && (
           <div role="alert" className="shrink-0 flex items-center gap-space-sm px-gutter py-space-xs bg-error-container/40 text-on-error-container font-body-sm text-body-sm">
@@ -128,6 +152,7 @@ export function Shell({ tab, go, backendOnline, endpointName, children }: ShellP
           </div>
         )}
         <main className="flex-1 min-h-0 overflow-y-auto splatter-soft" id="main">{children}</main>
+        <MobileNavigation tab={tab} go={go} />
       </div>
     </div>
   );
