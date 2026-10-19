@@ -39,7 +39,11 @@ async function loadPuter(): Promise<any> {
     const onError = () => reject(new Error('Could not load Puter.js.'));
 
     if (existing) {
-      existing.addEventListener('load', onLoad, { once: true });
+      if (existing.dataset.loaded === 'true') {
+        onLoad();
+        return;
+      }
+      existing.addEventListener('load', () => { existing.dataset.loaded = 'true'; onLoad(); }, { once: true });
       existing.addEventListener('error', onError, { once: true });
       return;
     }
@@ -48,7 +52,7 @@ async function loadPuter(): Promise<any> {
     script.src = 'https://js.puter.com/v2/';
     script.async = true;
     script.dataset.breezyPuter = '1';
-    script.onload = onLoad;
+    script.onload = () => { script.dataset.loaded = 'true'; onLoad(); };
     script.onerror = onError;
     document.head.appendChild(script);
   }).catch((error) => {
@@ -74,10 +78,12 @@ export const puterService = {
   },
 
   async signIn(): Promise<void> {
-    const puter = await loadPuter();
+    // Do not await script loading here: the sign-in popup must be opened from
+    // the original user gesture. The UI loads Puter before enabling this action.
+    const puter = typeof window !== 'undefined' ? window.puter : undefined;
+    if (!puter) throw new Error('Puter.js is not loaded yet. Retry after the connection panel finishes loading.');
     if (puter.auth?.isSignedIn?.()) return;
     if (!puter.auth?.signIn) throw new Error('Puter authentication is unavailable.');
-    // Must be called from a direct user action because Puter opens a popup.
     await puter.auth.signIn();
   },
 
