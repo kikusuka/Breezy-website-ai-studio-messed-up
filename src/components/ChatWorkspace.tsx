@@ -33,6 +33,7 @@ export const ChatWorkspace: React.FC = () => {
     setPuterBusy(true);
     setPuterError(null);
     try {
+      await puterService.ensureLoaded();
       const signedIn = await puterService.isSignedIn();
       setPuterSignedIn(signedIn);
       if (!signedIn) {
@@ -59,6 +60,7 @@ export const ChatWorkspace: React.FC = () => {
       setPuterBusy(true);
       setPuterError(null);
       try {
+        await puterService.ensureLoaded();
         const signedIn = await puterService.isSignedIn();
         if (cancelled) return;
         setPuterSignedIn(signedIn);
@@ -86,6 +88,11 @@ export const ChatWorkspace: React.FC = () => {
     setPuterBusy(true);
     setPuterError(null);
     try {
+      if (!window.puter) {
+        await puterService.ensureLoaded();
+        setPuterError('Puter.js is ready. Click Connect Puter again to authorize your account.');
+        return;
+      }
       await puterService.signIn();
       const signedIn = await puterService.isSignedIn();
       setPuterSignedIn(signedIn);
