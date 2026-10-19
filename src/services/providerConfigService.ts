@@ -110,8 +110,6 @@ export const PRESET_ROLE_CONFIGS: Record<string, CanonicalWorkspaceConfig['roles
   },
 };
 
-const DEFAULT_ROLES: CanonicalWorkspaceConfig['roles'] = PRESET_ROLE_CONFIGS.balanced;
-
 export const providerConfigService = {
   /**
    * Apply preset and update role seat assignments canonically
@@ -136,7 +134,6 @@ export const providerConfigService = {
       const raw = localStorage.getItem(CANONICAL_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        const hasKeys = parsed.keys && Object.keys(parsed.keys).some((k) => Boolean(parsed.keys[k]));
         return {
           // Preserve an explicitly empty selection. Having a key is not consent
           // to silently select a provider or model for the user.
@@ -165,8 +162,6 @@ export const providerConfigService = {
         localStorage.getItem('synthexis_byok_keys');
 
       const keys: CanonicalProviderKeys = legacyKeysRaw ? JSON.parse(legacyKeysRaw) : {};
-      const hasAnyKey = Object.keys(keys).some((k) => Boolean(keys[k]));
-
       const initialConfig: CanonicalWorkspaceConfig = {
         // Legacy keys are retained, but the user must explicitly choose where
         // new chat requests are routed.
