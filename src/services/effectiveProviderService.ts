@@ -83,7 +83,11 @@ class EffectiveProviderService {
       Boolean(providerConfigService.getKey(provider));
 
     const hasLocalRuntime =
-      (provider === 'ollama' || provider === 'openai-compatible') && hasSelectedLocalModel;
+      provider === 'ollama'
+        ? Boolean(config.ollamaBaseUrl && hasSelectedLocalModel)
+        : provider === 'openai-compatible'
+          ? Boolean(config.openaiCompatibleBaseUrl && hasSelectedLocalModel)
+          : false;
     const hasServer = provider === 'gemini' && this.serverGeminiConfigured;
     const hasKey = hasByok || hasServer || hasLocalRuntime;
 
@@ -176,7 +180,7 @@ class EffectiveProviderService {
    */
   public isRoutable(provider: string): boolean {
     const info = this.getProviderInfo(provider);
-    return info.hasKey;
+    return info.hasKey && info.status !== 'ERROR';
   }
 
   /**
