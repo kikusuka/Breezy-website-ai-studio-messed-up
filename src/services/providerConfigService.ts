@@ -110,8 +110,6 @@ export const PRESET_ROLE_CONFIGS: Record<string, CanonicalWorkspaceConfig['roles
   },
 };
 
-const DEFAULT_ROLES: CanonicalWorkspaceConfig['roles'] = PRESET_ROLE_CONFIGS.balanced;
-
 export const providerConfigService = {
   /**
    * Apply preset and update role seat assignments canonically
@@ -136,12 +134,13 @@ export const providerConfigService = {
       const raw = localStorage.getItem(CANONICAL_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        const hasKeys = parsed.keys && Object.keys(parsed.keys).some((k) => Boolean(parsed.keys[k]));
         return {
-          defaultProvider: parsed.defaultProvider || (hasKeys ? 'gemini' : ''),
-          defaultModel: parsed.defaultModel || (hasKeys ? 'gemini-2.5-flash' : ''),
+          // Preserve an explicitly empty selection. Having a key is not consent
+          // to silently select a provider or model for the user.
+          defaultProvider: typeof parsed.defaultProvider === 'string' ? parsed.defaultProvider : '',
+          defaultModel: typeof parsed.defaultModel === 'string' ? parsed.defaultModel : '',
           preset: parsed.preset || 'balanced',
-          roles: parsed.roles || (hasKeys ? DEFAULT_ROLES : UNCONFIGURED_ROLES),
+          roles: parsed.roles || UNCONFIGURED_ROLES,
           fallback: parsed.fallback || { enabled: false, provider: '', model: '' },
           keys: parsed.keys || {},
           autoResolve: typeof parsed.autoResolve === 'boolean' ? parsed.autoResolve : true,
@@ -163,13 +162,13 @@ export const providerConfigService = {
         localStorage.getItem('synthexis_byok_keys');
 
       const keys: CanonicalProviderKeys = legacyKeysRaw ? JSON.parse(legacyKeysRaw) : {};
-      const hasAnyKey = Object.keys(keys).some((k) => Boolean(keys[k]));
-
       const initialConfig: CanonicalWorkspaceConfig = {
-        defaultProvider: hasAnyKey ? 'gemini' : '',
-        defaultModel: hasAnyKey ? 'gemini-2.5-flash' : '',
+        // Legacy keys are retained, but the user must explicitly choose where
+        // new chat requests are routed.
+        defaultProvider: '',
+        defaultModel: '',
         preset: 'balanced',
-        roles: hasAnyKey ? DEFAULT_ROLES : UNCONFIGURED_ROLES,
+        roles: UNCONFIGURED_ROLES,
         fallback: { enabled: false, provider: '', model: '' },
         keys,
         autoResolve: true,
@@ -278,17 +277,13 @@ export const providerConfigService = {
   getActiveRoutableModel(): { provider: string; model: string } | null {
     const config = this.getConfig();
     const configured = this.getConfiguredProviders();
-    if (config.defaultProvider && config.defaultModel && configured.includes(config.defaultProvider)) {
-      return { provider: config.defaultProvider, model: config.defaultModel };
+
+    // Never infer a chat model from key order or from a research seat.
+    if (!config.defaultProvider || !config.defaultModel || !configured.includes(config.defaultProvider)) {
+      return null;
     }
-    if (configured.length > 0) {
-      const firstProv = configured[0];
-      const models = AVAILABLE_MODELS[firstProv];
-      if (models && models.length > 0) {
-        return { provider: firstProv, model: models[0].id };
-      }
-    }
-    return null;
+
+    return { provider: config.defaultProvider, model: config.defaultModel };
   },
 
   /**
