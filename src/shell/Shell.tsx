@@ -47,7 +47,7 @@ function Sidebar({ tab, go, backendOnline, endpointName, mobileOpen, onClose }: 
     {mobileOpen && <button type="button" aria-label="Close navigation" onClick={onClose} className="lg:hidden fixed inset-0 z-[60] bg-black/35" />}
     <aside className={`${mobileOpen ? 'flex translate-x-0' : '-translate-x-full lg:translate-x-0'} fixed left-0 top-0 h-full w-64 z-[70] flex-col justify-between bg-surface-container-low/95 backdrop-blur-xl shadow-[1px_0_0_rgba(61,73,77,0.35)] transition-transform duration-200 ease-out lg:flex`}>
       <div className="flex flex-col min-h-0 overflow-y-auto">
-        <a href="#landing" onClick={(e) => { e.preventDefault(); go('landing'); }} className="h-16 px-space-lg flex items-center gap-space-sm shrink-0">
+        <a href="#landing" onClick={(e) => { e.preventDefault(); go('landing'); onClose(); }} className="h-16 px-space-lg flex items-center gap-space-sm shrink-0">
           <BreezyLogo size={30} /><span className="font-headline-sm text-headline-sm tracking-tight text-on-surface">Breezy</span>
           <span className="ml-auto font-code-sm text-code-sm text-primary bg-surface-container-highest px-space-xs py-0.5 rounded">v{VERSION}</span>
         </a>
