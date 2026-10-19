@@ -72,7 +72,6 @@ function Sidebar({ tab, go, backendOnline, endpointName, mobileOpen, onClose }: 
         </button>
       </div>
     </aside>
-    </aside>
     </>
   );
 }
