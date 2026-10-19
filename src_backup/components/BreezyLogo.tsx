@@ -24,10 +24,6 @@ export const BreezyLogo: React.FC<BreezyLogoProps> = ({
           src="/breezy1.png"
           alt="Breezy"
           className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(76,214,251,0.35)] transition-transform duration-300 hover:scale-105"
-          onError={(e) => {
-            // Graceful fallback to svg favicon if needed
-            (e.currentTarget as HTMLImageElement).src = '/favicon.svg';
-          }}
         />
       </div>
 
